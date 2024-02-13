@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq, Copy, Clone)]
-struct ParserInput<'a> {
+pub struct ParserInput<'a> {
     content: &'a str,
     line: usize,
     col: usize,
@@ -32,19 +32,19 @@ impl<'a> From<&'a str> for ParserInput<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-struct ParserSuccess<'a, Output> {
-    content: Output,
-    next_input: ParserInput<'a>,
+pub struct ParserSuccess<'a, Output> {
+    pub content: Output,
+    pub next_input: ParserInput<'a>,
 }
 
 #[derive(Debug, PartialEq)]
-struct ParserError {
-    error: String,
+pub struct ParserError {
+    pub error: String,
 }
 
-type ParserResult<'a, Output> = Result<ParserSuccess<'a, Output>, ParserError>;
+pub type ParserResult<'a, Output> = Result<ParserSuccess<'a, Output>, ParserError>;
 
-trait Parser<'a, Output> {
+pub trait Parser<'a, Output> {
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Output>;
     fn map<F, B>(self, f: F) -> impl Parser<'a, B>
     where
@@ -52,6 +52,23 @@ trait Parser<'a, Output> {
     fn map_error<F>(self, f: F) -> impl Parser<'a, Output>
     where
         F: Fn(ParserError) -> ParserError;
+    fn chain<P1, Output2>(self, p: P1) -> impl Parser<'a, (Output, Output2)>
+    where
+        P1: Parser<'a, Output2>;
+    fn or_else<P1>(self, p: P1) -> impl Parser<'a, Output>
+    where
+        P1: Parser<'a, Output>;
+    fn predicate<Pred>(self, p: Pred, msg: &str) -> impl Parser<'a, Output>
+    where
+        Pred: Fn(&Output) -> bool;
+    fn zero_or_more(self) -> impl Parser<'a, Vec<Output>>;
+    fn one_or_more(self) -> impl Parser<'a, Vec<Output>>;
+    fn skip_me<P1, Output1>(self, p: P1) -> impl Parser<'a, Output1>
+    where
+        P1: Parser<'a, Output1>;
+    fn skip_next<P1, Output1>(self, p: P1) -> impl Parser<'a, Output>
+    where
+        P1: Parser<'a, Output1>;
 }
 
 impl<'a, Output, P> Parser<'a, Output> for P
@@ -84,178 +101,155 @@ where
             Err(err) => Err(f(err)),
         }
     }
-}
 
-fn map<'a, P, F, A, B>(parser: P, f: F) -> impl Parser<'a, B>
-where
-    P: Parser<'a, A>,
-    F: Fn(A) -> B,
-{
-    move |input| {
-        let result = parser.parse(input)?;
-        Ok(ParserSuccess {
-            content: f(result.content),
-            next_input: result.next_input,
-        })
-    }
-}
-
-fn predicate<'a, P, R, Predicate>(parser: P, p: Predicate) -> impl Parser<'a, R>
-where
-    P: Parser<'a, R>,
-    Predicate: Fn(&R) -> bool,
-{
-    move |input: ParserInput<'a>| {
-        let result = parser.parse(input)?;
-        if p(&result.content) {
-            Ok(result)
-        } else {
-            Err(input.generate_error("predicate not respected".into()))
-        }
-    }
-}
-
-fn pair<'a, P1, P2, R1, R2>(p1: P1, p2: P2) -> impl Parser<'a, (R1, R2)>
-where
-    P1: Parser<'a, R1>,
-    P2: Parser<'a, R2>,
-{
-    move |input| {
-        p1.parse(input).and_then(|r1| {
-            p2.parse(r1.next_input).map(|r2| ParserSuccess {
+    fn chain<P1, Output2>(self, p: P1) -> impl Parser<'a, (Output, Output2)>
+    where
+        P1: Parser<'a, Output2>,
+    {
+        move |input| {
+            let r1 = self.parse(input)?;
+            let r2 = p.parse(r1.next_input)?;
+            Ok(ParserSuccess {
                 content: (r1.content, r2.content),
                 next_input: r2.next_input,
             })
-        })
+        }
     }
-}
 
-fn right<'a, P1, P2, R1, R2>(p1: P1, p2: P2) -> impl Parser<'a, R2>
-where
-    P1: Parser<'a, R1>,
-    P2: Parser<'a, R2>,
-{
-    map(pair(p1, p2), |(r1, r2)| r2)
-}
-
-fn left<'a, P1, P2, R1, R2>(p1: P1, p2: P2) -> impl Parser<'a, R1>
-where
-    P1: Parser<'a, R1>,
-    P2: Parser<'a, R2>,
-{
-    map(pair(p1, p2), |(r1, r2)| r1)
-}
-
-fn either<'a, P1, P2, R>(p1: P1, p2: P2) -> impl Parser<'a, R>
-where
-    P1: Parser<'a, R>,
-    P2: Parser<'a, R>,
-{
-    move |input| match p1.parse(input) {
-        Ok(result) => Ok(result),
-        Err(err1) => match p2.parse(input) {
-            Ok(result) => Ok(result),
-            Err(err2) => Err(ParserError {
-                error: format!("{} \nand {}", err1.error, err2.error),
-            }),
-        },
+    fn predicate<Pred>(self, p: Pred, msg: &str) -> impl Parser<'a, Output>
+    where
+        Pred: Fn(&Output) -> bool,
+    {
+        move |input| {
+            let result = self.parse(input)?;
+            if p(&result.content) {
+                Ok(result)
+            } else {
+                Err(ParserError { error: msg.into() })
+            }
+        }
     }
-}
 
-fn zero_or_more<'a, P, R>(parser: P) -> impl Parser<'a, Vec<R>>
-where
-    P: Parser<'a, R>,
-{
-    move |mut input| {
-        let mut results = Vec::new();
-        while let Ok(result) = parser.parse(input) {
+    fn or_else<P1>(self, p: P1) -> impl Parser<'a, Output>
+    where
+        P1: Parser<'a, Output>,
+    {
+        move |input| self.parse(input).or(p.parse(input))
+    }
+
+    fn zero_or_more(self) -> impl Parser<'a, Vec<Output>> {
+        move |mut input| {
+            let mut results = Vec::new();
+            while let Ok(result) = self.parse(input) {
+                input = result.next_input;
+                results.push(result.content);
+            }
+            Ok(ParserSuccess {
+                content: results,
+                next_input: input,
+            })
+        }
+    }
+
+    fn one_or_more(self) -> impl Parser<'a, Vec<Output>> {
+        move |mut input| {
+            let mut results = Vec::new();
+            let result = self.parse(input)?;
             input = result.next_input;
             results.push(result.content);
+            while let Ok(result) = self.parse(input) {
+                input = result.next_input;
+                results.push(result.content);
+            }
+            Ok(ParserSuccess {
+                content: results,
+                next_input: input,
+            })
         }
-        Ok(ParserSuccess {
-            content: results,
-            next_input: input,
-        })
+    }
+
+    fn skip_me<P1, Output1>(self, p: P1) -> impl Parser<'a, Output1>
+    where
+        P1: Parser<'a, Output1>,
+    {
+        self.chain(p).map(|(_, r)| r)
+    }
+
+    fn skip_next<P1, Output1>(self, p: P1) -> impl Parser<'a, Output>
+    where
+        P1: Parser<'a, Output1>,
+    {
+        self.chain(p).map(|(r, _)| r)
     }
 }
 
-fn one_or_more<'a, P, R>(parser: P) -> impl Parser<'a, Vec<R>>
+pub fn space0<'a>() -> impl Parser<'a, ()> {
+    anychar
+        .predicate(|c| c.is_whitespace(), "")
+        .zero_or_more()
+        .map(|_| ())
+}
+
+pub fn space1<'a>() -> impl Parser<'a, ()> {
+    anychar
+        .predicate(|c| c.is_whitespace(), "")
+        .one_or_more()
+        .map(|_| ())
+}
+
+pub fn between_spaces<'a, P, R>(parser: P) -> impl Parser<'a, R>
 where
     P: Parser<'a, R>,
 {
-    move |mut input| {
-        let mut results = Vec::new();
-        let result = parser.parse(input)?;
-        input = result.next_input;
-        results.push(result.content);
-        while let Ok(result) = parser.parse(input) {
-            input = result.next_input;
-            results.push(result.content);
-        }
-        Ok(ParserSuccess {
-            content: results,
-            next_input: input,
-        })
-    }
-}
-
-fn space0<'a>() -> impl Parser<'a, ()> {
-    map(
-        zero_or_more(predicate(anychar, |c| c.is_whitespace())),
-        |_| (),
-    )
-}
-
-fn space1<'a>() -> impl Parser<'a, ()> {
-    map(
-        one_or_more(predicate(anychar, |c| c.is_whitespace())),
-        |_| (),
-    )
-}
-
-fn starts_with_space<'a, P, R>(parser: P) -> impl Parser<'a, R>
-where
-    P: Parser<'a, R>,
-{
-    right(space0(), parser)
+    space0().chain(parser).chain(space0()).map(|((_, r), _)| r)
 }
 
 fn naked_string<'a>() -> impl Parser<'a, String> {
-    map(
-        pair(
-            predicate(anychar, |c| c.is_alphabetic()),
-            zero_or_more(predicate(anychar, |c| c.is_alphanumeric())),
-        ),
-        |(head, mut tail)| {
+    anychar
+        .predicate(|c| c.is_alphabetic(), "Expected alphabetic character")
+        .chain(
+            anychar
+                .predicate(|c| c.is_alphanumeric(), "Expected alphanumeric character")
+                .zero_or_more(),
+        )
+        .map(|(head, mut tail)| {
             tail.insert(0, head);
             tail.into_iter().collect::<String>()
-        },
-    )
+        })
 }
 
 fn quoted_string<'a>() -> impl Parser<'a, String> {
-    map(
-        right(
-            predicate(anychar, |c| *c == '"'),
-            left(
-                one_or_more(predicate(anychar, |c| *c != '"')),
-                predicate(anychar, |c| *c == '"'),
-            ),
-        ),
-        |cs| cs.into_iter().collect::<String>(),
-    )
+    anychar
+        .predicate(|c| *c == '"', "Expected double quote")
+        .skip_me(
+            anychar
+                .predicate(|c| *c != '"', "Expected non empty string")
+                .one_or_more(),
+        )
+        .skip_next(anychar.predicate(|c| *c == '"', "Expected double quote"))
+        .map(|v| v.into_iter().collect::<String>())
 }
 
-fn identifier<'a>() -> impl Parser<'a, String> {
-    either(naked_string(), quoted_string())
+pub fn identifier<'a>() -> impl Parser<'a, String> {
+    naked_string().or_else(quoted_string())
 }
 
-fn natural_number<'a>() -> impl Parser<'a, u32> {
-    one_or_more(predicate(anychar, |c| c.is_numeric()))
+pub fn natural_number<'a>() -> impl Parser<'a, u32> {
+    anychar
+        .predicate(|c| c.is_numeric(), "Expected natural number")
+        .one_or_more()
         .map(|v| v.into_iter().collect::<String>().parse().unwrap())
-        .map_error(|_| ParserError {
-            error: "Natural number expected".into(),
-        })
+}
+
+pub fn real_number<'a>() -> impl Parser<'a, f32> {
+    anychar
+        .predicate(|c| c.is_numeric() || *c == '.', "Expected number")
+        .one_or_more()
+        .predicate(
+            |v| v.into_iter().collect::<String>().parse::<f32>().is_ok(),
+            "Expected real number",
+        )
+        .map(|v| v.into_iter().collect::<String>().parse().unwrap())
 }
 
 fn anychar<'a>(input: ParserInput<'a>) -> ParserResult<'a, char> {
@@ -286,7 +280,7 @@ fn anychar<'a>(input: ParserInput<'a>) -> ParserResult<'a, char> {
     }
 }
 
-fn literal<'a>(keyword: &'static str) -> impl Parser<'a, &'static str> {
+pub fn literal<'a>(keyword: &'static str) -> impl Parser<'a, &'static str> {
     move |input: ParserInput<'a>| {
         let line_break_position = keyword.rfind(|c| c == '\n').unwrap_or(0);
         let line = keyword.chars().filter(|c| *c != '\n').count();
@@ -357,34 +351,38 @@ mod test {
     //     );
     // }
 
-    #[test]
-    fn t_either() {
-        assert_eq!(
-            None,
-            Some(either(literal("init"), literal("vitesse")).parse("vitesse(E1)=0.4;".into()))
-        );
-    }
+    // #[test]
+    // fn t_either() {
+    //     assert_eq!(
+    //         None,
+    //         Some(
+    //             literal("init")
+    //                 .chain(literal("vitesse"))
+    //                 .parse("vitesse(E1)=0.4;".into())
+    //         )
+    //     );
+    // }
 
-    #[test]
-    fn t_zero_or_more() {
-        assert_eq!(
-            None,
-            Some(zero_or_more(literal("1")).parse("112122".into()))
-        )
-    }
-    #[test]
-    fn t_one_or_more() {
-        assert_eq!(None, Some(one_or_more(literal("1")).parse("2122".into())))
-    }
-    #[test]
-    fn t_naked_string() {
-        assert_eq!(None, Some(naked_string().parse("EA31+".into())))
-    }
-    #[test]
-    fn t_quoted_string() {
-        assert_eq!(
-            None,
-            Some(quoted_string().parse("\"EA+  45 ()\":i->p;".into()))
-        )
-    }
+    // #[test]
+    // fn t_zero_or_more() {
+    //     assert_eq!(
+    //         None,
+    //         Some(zero_or_more(literal("1")).parse("112122".into()))
+    //     )
+    // }
+    // #[test]
+    // fn t_one_or_more() {
+    //     assert_eq!(None, Some(one_or_more(literal("1")).parse("2122".into())))
+    // }
+    // #[test]
+    // fn t_naked_string() {
+    //     assert_eq!(None, Some(naked_string().parse("EA31+".into())))
+    // }
+    // #[test]
+    // fn t_quoted_string() {
+    //     assert_eq!(
+    //         None,
+    //         Some(quoted_string().parse("\"EA+  45 ()\":i->p;".into()))
+    //     )
+    // }
 }
