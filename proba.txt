@@ -1,0 +1,10 @@
+/*
+ *	Km et Kcat => probabilités.
+ *
+ *	P3 = Kcat / 10000
+ *	P2 = P3 / 10
+ *	P1 = (P2 + P3) / (0.448 * (1 + (P2 + P3)²) * Km)
+ *
+ *	P1 >= 1 quand Kcat >= 300 et Km <= 80 µM (le pas de temps
+ *	de 100 µs est alors trop grand)
+ */

@@ -11,7 +11,7 @@
         overlays = [(import rust-overlay)];
         pkgs = import nixpkgs { inherit system overlays; };
         libPath = pkgs.lib.makeLibraryPath (with pkgs; [
-          libGL
+          vulkan-loader
           libxkbcommon
           wayland
           xorg.libX11
@@ -27,6 +27,7 @@
             rust-bin.stable.latest.default
             rust-analyzer
             bacon
+            cargo-expand
             udev
             gdb
             linuxKernel.packages.linux_zen.perf

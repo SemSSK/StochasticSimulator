@@ -37,6 +37,18 @@ pub struct ParserSuccess<'a, Output> {
     pub next_input: ParserInput<'a>,
 }
 
+impl<'a, Output> ParserSuccess<'a, Output> {
+    pub fn map<F, B>(self, f: F) -> ParserSuccess<'a, B>
+    where
+        F: Fn(Output) -> B,
+    {
+        ParserSuccess {
+            content: f(self.content),
+            next_input: self.next_input,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct ParserError {
     pub error: String,
@@ -277,6 +289,15 @@ fn anychar<'a>(input: ParserInput<'a>) -> ParserResult<'a, char> {
             }
         }
         None => Err(input.generate_error("Unexpected end of file".to_string())),
+    }
+}
+
+pub fn nothing<'a>() -> impl Parser<'a, ()> {
+    move |input: ParserInput<'a>| {
+        Ok(ParserSuccess {
+            content: (),
+            next_input: input,
+        })
     }
 }
 

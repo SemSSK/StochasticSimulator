@@ -1,5 +1,8 @@
 [workspace]
 resolver = "2"
-members = [
+members = [ "collision_handler",
   "gillespie", "parser"
 ]
+[workspace.dependencies]
+rand = "0.8.5"
+itertools = "0.12.1"
