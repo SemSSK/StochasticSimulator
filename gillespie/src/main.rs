@@ -1,7 +1,10 @@
 use itertools::Itertools;
 use parser::{Ast, Parsable};
 use rand::prelude::*;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{AddAssign, SubAssign},
+};
 
 // Constants
 const ALPHA: f32 = 0.00000074;
@@ -52,8 +55,46 @@ struct Reaction {
     probability: Probability,
 }
 
+impl Reaction {
+    fn calc_tau(&self, state: &ElementsState) -> f32 {
+        if self.solubes.len() > 1 {
+            (ALPHA / V)
+                * (self
+                    .solubes
+                    .iter()
+                    .fold(1, |prod, solube| prod * state.get(solube).unwrap())
+                    as f32)
+                * self.probability.0
+        } else {
+            (self
+                .solubes
+                .iter()
+                .fold(1, |prod, solube| prod * state.get(solube).unwrap()) as f32)
+                * self.probability.0
+        }
+    }
+}
+
 #[derive(Debug)]
 struct ElementsState(HashMap<Chemical, u32>);
+
+impl ElementsState {
+    fn get(&self, chem: &Chemical) -> Option<u32> {
+        self.0.get(chem).cloned()
+    }
+    fn add_assign(&mut self, chem: &Chemical, value: u32) {
+        match self.0.get_mut(chem) {
+            Some(n) => n.add_assign(value),
+            None => (),
+        }
+    }
+    fn sub_assign(&mut self, chem: &Chemical, value: u32) {
+        match self.0.get_mut(chem) {
+            Some(n) => n.sub_assign(value),
+            None => (),
+        }
+    }
+}
 
 #[derive(Debug)]
 struct Environment {
@@ -67,21 +108,7 @@ impl Environment {
         let Some((tau, reaction)) = self
             .reactions
             .iter()
-            .map(|reaction| {
-                let tau = if reaction.solubes.len() > 1 {
-                    (ALPHA / V)
-                        * (reaction.solubes.iter().fold(1, |prod, solube| {
-                            prod * self.elements.0.get(solube).unwrap()
-                        }) as f32)
-                        * reaction.probability.0
-                } else {
-                    (reaction.solubes.iter().fold(1, |prod, solube| {
-                        prod * self.elements.0.get(solube).unwrap()
-                    }) as f32)
-                        * reaction.probability.0
-                };
-                (tau, reaction)
-            })
+            .map(|reaction| (reaction.calc_tau(&self.elements), reaction))
             .filter(|(a, _)| *a > 0.)
             .map(|(an, reaction)| (-rng.gen_range(0.0f32..=1.0f32).log10() / an, reaction))
             .min_by(|x, y| x.0.total_cmp(&y.0))
@@ -89,15 +116,13 @@ impl Environment {
             return ();
         };
         for solube in &reaction.solubes {
-            *self.elements.0.get_mut(&solube).unwrap() -= 1;
+            self.elements.sub_assign(&solube, 1);
         }
         for result in &reaction.results {
-            *self.elements.0.get_mut(&result).unwrap() += 1;
+            self.elements.add_assign(&result, 1);
         }
         self.time += tau;
     }
-
-    // fn update_approximation(&mut self, rng: &mut ThreadRng) {}
 
     fn get_csv_heading(&self) -> String {
         std::format!(
@@ -122,6 +147,12 @@ impl Environment {
                 .intersperse(",".to_string())
                 .collect::<String>()
         )
+    }
+}
+
+impl From<Ast> for Environment {
+    fn from(ast: Ast) -> Self {
+        ast.to_environment()
     }
 }
 
@@ -225,7 +256,7 @@ fn main() {
     let mut csv = env.get_csv_heading();
     for i in 0..100_000 {
         env.update_exact(&mut rng);
-        if i % 10 == 0 {
+        if i % 100 == 0 {
             csv.push_str(&env.get_csv_line());
         }
     }
