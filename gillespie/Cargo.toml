@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-simulation_parser = {path = "../simulation_parser"}
-rand = {workspace = true}
-itertools = {workspace = true}
+simulation_parser = { path = "../simulation_parser" }
+fastrand = { workspace = true }
+itertools = { workspace = true }
+clap = { workspace = true }

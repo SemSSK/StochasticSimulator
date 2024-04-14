@@ -323,9 +323,6 @@ pub fn literal<'a>(keyword: &'static str) -> impl Parser<'a, &'static str> {
 
 #[cfg(test)]
 mod test {
-    use core::panic;
-
-    use crate::parser_combinator::*;
 
     // #[test]
     // fn t_anychar() {

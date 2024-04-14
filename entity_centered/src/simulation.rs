@@ -6,7 +6,7 @@ use indicatif::ProgressBar;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
 
-use crate::vector::{generate_random_position, VectorInt3d};
+use crate::vector::VectorInt3d;
 
 fn detect_collision(
     moved_molecules: FxHashMap<VectorInt3d, Vec<MovedMolecule>>,
@@ -54,8 +54,7 @@ fn simulation(reg: &ReactionRegistry, molecules: &mut Vec<Molecule>) {
     let movedmols = group(
         molecules
             .iter()
-            .enumerate()
-            .map(|(i, m)| m.apply_movement(Vector3d::get_random_unitary()))
+            .map(|m| m.apply_movement(Vector3d::get_random_unitary()))
             .map(|m| (m.next_position.into_vectorint(), m)),
     );
     molecules.clear();
@@ -69,7 +68,7 @@ pub fn run(environment: Environment) -> String {
         registry,
         mut molecules,
     } = environment;
-    let iterations = 5_0_000;
+    let iterations = 3_000_000;
     let bar = ProgressBar::new(iterations as u64);
     for t in 1..iterations {
         molecules.reverse();

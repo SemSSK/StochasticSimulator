@@ -11,13 +11,12 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 simulation_parser = { path = "../simulation_parser" }
-# rand = { workspace = true }
 itertools = { workspace = true }
+fastrand = { workspace = true }
+clap = { workspace = true }
 rayon = "1.10.0"
 rustc-hash = "1.1.0"
 smallvec = "1.13.2"
 mimalloc = "0.1.39"
 indicatif = "0.17.8"
-clap = { version = "4.5.4", features = ["derive"] }
-fastrand = "2.0.2"
 typed-arena = "2.0.2"

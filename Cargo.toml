@@ -4,8 +4,9 @@
 
 [workspace]
 resolver = "2"
-members = [ "entity_centered",  "gillespie", "simulation_parser"
-]
+members = ["entity_centered", "gillespie", "simulation_parser"]
+
 [workspace.dependencies]
-rand = "0.8.5"
+fastrand = "2.0.2"
 itertools = "0.12.1"
+clap = { version = "4.5.4", features = ["derive"] }

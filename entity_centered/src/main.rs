@@ -107,11 +107,10 @@ impl From<Ast> for Environment {
                     );
                     registry.insert(
                         reaction_registry::CollidedElements::Mono(enzhym_solube),
-                        reaction_registry::Outcome::One(vec![enzhym, solube], p2),
-                    );
-                    registry.insert(
-                        reaction_registry::CollidedElements::Mono(enzhym_solube),
-                        reaction_registry::Outcome::One(vec![enzhym, result], p3),
+                        reaction_registry::Outcome::Two(
+                            (vec![enzhym, result], p3),
+                            (vec![enzhym, solube], p2),
+                        ),
                     );
                 }
                 simulation_parser::Expression::SpeedDeclaration(s) => {
