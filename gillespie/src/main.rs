@@ -44,6 +44,7 @@ impl IdElementTable {
 #[derive(Debug)]
 pub struct Environment {
     pub board: ValueBoard,
+    pub last_state: Vec<i32>,
     pub registry: ReactionRegistry,
     pub time: f32,
 }
@@ -104,6 +105,7 @@ impl From<Ast> for Environment {
             0.,
         );
         Self {
+            last_state: board.rows.last().unwrap().clone().0,
             board,
             registry,
             time: 0.,
@@ -112,18 +114,19 @@ impl From<Ast> for Environment {
 }
 
 impl Environment {
-    fn update(&mut self) {
-        let current_state = &self.board.rows.last().unwrap().0;
-        let (update_vector, tau) = self
-            .registry
-            .calc_update_vector_and_tau(&self.board.rows.last().unwrap().0);
+    fn update(&mut self, save: bool) {
+        let current_state = &self.last_state;
+        let (update_vector, tau) = self.registry.calc_update_vector_and_tau(&current_state);
         let updated_state = current_state
             .iter()
             .zip(update_vector)
             .map(|(x, update)| x + update)
             .collect::<Vec<_>>();
         self.time += tau;
-        self.board.add_entry(updated_state, self.time);
+        self.last_state = updated_state;
+        if save {
+            self.board.add_entry(self.last_state.clone(), self.time);
+        }
     }
     fn get_csv(&self) -> String {
         self.board.convert_to_csv()
@@ -150,8 +153,8 @@ fn main() {
             .expect("Parsing Error")
             .content,
     );
-    for _ in 0..10_000 {
-        environment.update();
+    for i in 0..500_000 {
+        environment.update(i % 10 == 0);
     }
     fs::write(arg.output, environment.get_csv()).unwrap();
 }

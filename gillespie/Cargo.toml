@@ -11,3 +11,4 @@ simulation_parser = { path = "../simulation_parser" }
 fastrand = { workspace = true }
 itertools = { workspace = true }
 clap = { workspace = true }
+rand = "0.8.5"

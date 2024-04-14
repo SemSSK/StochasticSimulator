@@ -12,7 +12,7 @@ impl ValueBoard {
     }
     pub fn convert_to_csv(&self) -> String {
         let mut csv = self.columns.join(", ");
-        for (v, t) in &self.rows {
+        for (v, t) in self.rows.iter() {
             csv.push('\n');
             csv.push_str(&v.into_iter().join(", "));
             csv.push(',');

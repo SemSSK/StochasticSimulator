@@ -1,6 +1,9 @@
+use rand::{distributions::Uniform, Rng};
+
 use crate::probability::Probability;
-use std::collections::HashMap;
 use std::hash::Hash;
+
+const ALPHA: f32 = 7.4e-7;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Element {
@@ -24,28 +27,27 @@ pub enum CollidedElements {
 impl CollidedElements {
     fn calculate_consontration(&self, state: &[i32]) -> f32 {
         (match self {
-            CollidedElements::Mono(e) => state[e.uuid as usize],
-            CollidedElements::Bi(e1, e2) => state[e1.uuid as usize] * state[e2.uuid as usize],
-        }) as f32
+            CollidedElements::Mono(e) => state[e.uuid as usize] as f32,
+            CollidedElements::Bi(e1, e2) => {
+                ALPHA * (state[e1.uuid as usize] * state[e2.uuid as usize]) as f32
+            }
+        })
     }
 }
 
 #[derive(Debug)]
 pub struct ReactionRegistry {
-    register: HashMap<CollidedElements, (Vec<Element>, Probability)>,
+    register: Vec<(CollidedElements, (Vec<Element>, Probability))>,
 }
 
 impl ReactionRegistry {
     pub fn new() -> Self {
         Self {
-            register: HashMap::default(),
+            register: Vec::default(),
         }
     }
     pub fn insert(&mut self, k: CollidedElements, v: (Vec<Element>, Probability)) {
-        self.register.insert(k, v);
-    }
-    pub fn get(&self, k: &CollidedElements) -> Option<&(Vec<Element>, Probability)> {
-        self.register.get(k)
+        self.register.push((k, v));
     }
     pub fn get_rate_of_all_reaction(&self, state: &[i32]) -> f32 {
         self.register.iter().fold(0., |r, (collision, (_, p))| {
@@ -62,8 +64,9 @@ impl ReactionRegistry {
         self.get_rate_vector(state)
             .iter()
             .map(|&rate| {
+                let dist: Uniform<f32> = rand::distributions::Uniform::new(0., 1.);
                 if rate != 0. {
-                    -fastrand::f32().log10() / rate
+                    -rand::thread_rng().sample(dist).ln() / rate
                 } else {
                     f32::INFINITY
                 }

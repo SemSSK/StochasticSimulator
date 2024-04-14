@@ -11,6 +11,7 @@
         overlays = [(import rust-overlay)];
         pkgs = import nixpkgs { inherit system overlays; };
         python-pkgs = pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
+          python-lsp-server
           pandas
           matplotlib
         ]);
@@ -39,8 +40,8 @@
             linuxKernel.packages.linux_zen.perf
             mold
             cargo-flamegraph
-            hotspot
-          ] ++ python-pkgs;
+            python-pkgs
+          ];
           RUST_SRC_PATH = rustPlatform.rustLibSrc;
           LD_LIBRARY_PATH = libPath;
         };
