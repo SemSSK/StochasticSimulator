@@ -10,6 +10,10 @@
       let
         overlays = [(import rust-overlay)];
         pkgs = import nixpkgs { inherit system overlays; };
+        python-pkgs = pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
+          pandas
+          matplotlib
+        ]);
         libPath = pkgs.lib.makeLibraryPath (with pkgs; [
           vulkan-loader
           libGL libGLU
@@ -36,7 +40,7 @@
             mold
             cargo-flamegraph
             hotspot
-          ];
+          ] ++ python-pkgs;
           RUST_SRC_PATH = rustPlatform.rustLibSrc;
           LD_LIBRARY_PATH = libPath;
         };

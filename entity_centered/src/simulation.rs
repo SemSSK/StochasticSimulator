@@ -68,7 +68,7 @@ pub fn run(environment: Environment) -> String {
         registry,
         mut molecules,
     } = environment;
-    let iterations = 3_000_000;
+    let iterations = 50_000;
     let bar = ProgressBar::new(iterations as u64);
     for t in 1..iterations {
         molecules.reverse();

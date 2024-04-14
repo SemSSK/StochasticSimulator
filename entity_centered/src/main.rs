@@ -108,8 +108,8 @@ impl From<Ast> for Environment {
                     registry.insert(
                         reaction_registry::CollidedElements::Mono(enzhym_solube),
                         reaction_registry::Outcome::Two(
-                            (vec![enzhym, result], p3),
                             (vec![enzhym, solube], p2),
+                            (vec![enzhym, result], p3),
                         ),
                     );
                 }
