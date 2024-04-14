@@ -1,7 +1,10 @@
+# [profile.release]
+# debug = 1
+
+
 [workspace]
 resolver = "2"
-members = [ "collision_handler",
-  "gillespie", "parser"
+members = [ "entity_centered",  "gillespie", "simulation_parser"
 ]
 [workspace.dependencies]
 rand = "0.8.5"

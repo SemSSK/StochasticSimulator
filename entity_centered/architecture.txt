@@ -1,0 +1,31 @@
+struct Molecule;
+
+enum CollisionFound {
+	Yes,
+	No
+}
+
+struct MovedMolecule {
+	..,
+	collisionfound:CollisionFound
+}
+
+enum CollsionType {
+	Mono, // No collision
+	InvalideCollision, // Rollback
+	GoodCollision, // Apply Collision Probabilistically
+}
+
+struct CollisionDecisionMolecules;
+
+struct ReactionRegister;
+
+move :: Molecule -> MovedMolecule
+
+detectCollision :: [MovedMolecule] -> [CollidedMolecules]
+
+finalizeStep :: ReactionRegister -> [CollisionDecisionMolecules] -> [Molecule]
+finalizeStep reg cols = flatMap (regs.apply) cols
+
+simulation :: [Molecule] -> [Molecule]
+simulation molecules = finalizeStep reactionRegister · detectCollision $ map move molecules

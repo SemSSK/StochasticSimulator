@@ -12,12 +12,14 @@
         pkgs = import nixpkgs { inherit system overlays; };
         libPath = pkgs.lib.makeLibraryPath (with pkgs; [
           vulkan-loader
+          libGL libGLU
           libxkbcommon
           wayland
           xorg.libX11
           xorg.libXcursor
           xorg.libXi
           xorg.libXrandr
+          mimalloc
         ]);
       in
       {
@@ -32,6 +34,8 @@
             gdb
             linuxKernel.packages.linux_zen.perf
             mold
+            cargo-flamegraph
+            hotspot
           ];
           RUST_SRC_PATH = rustPlatform.rustLibSrc;
           LD_LIBRARY_PATH = libPath;

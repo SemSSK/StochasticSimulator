@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-parser = {path = "../parser"}
+simulation_parser = {path = "../simulation_parser"}
 rand = {workspace = true}
 itertools = {workspace = true}
