@@ -26,12 +26,12 @@ pub enum CollidedElements {
 
 impl CollidedElements {
     fn calculate_consontration(&self, state: &[i32]) -> f32 {
-        (match self {
+        match self {
             CollidedElements::Mono(e) => state[e.uuid as usize] as f32,
             CollidedElements::Bi(e1, e2) => {
                 ALPHA * (state[e1.uuid as usize] * state[e2.uuid as usize]) as f32
             }
-        })
+        }
     }
 }
 
