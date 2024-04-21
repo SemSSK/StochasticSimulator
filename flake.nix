@@ -31,7 +31,7 @@
         devShell = with pkgs; mkShell {
           buildInputs = [
             pkg-config
-            rust-bin.stable.latest.default
+            rust-bin.nightly.latest.default
             rust-analyzer
             bacon
             cargo-expand

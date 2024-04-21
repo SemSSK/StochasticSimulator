@@ -1,8 +1,8 @@
 #[derive(Debug)]
-pub struct Probability(f32);
+pub struct Probability(f64);
 
 impl Probability {
-    pub fn new(x: f32) -> Option<Self> {
+    pub fn new(x: f64) -> Option<Self> {
         if x >= 0. && x <= 1. {
             Some(Probability(x))
         } else {
@@ -19,10 +19,14 @@ impl Probability {
         } else {
             (p2 + p3) / (0.448 * (1. + (p2 + p3).powi(2)) * km)
         };
-        (Probability(p3), Probability(p2), Probability(p1))
+        (
+            Probability(p3 as f64),
+            Probability(p2 as f64),
+            Probability(p3 as f64),
+        )
     }
 
-    pub fn get(&self) -> f32 {
+    pub fn get(&self) -> f64 {
         self.0
     }
 }

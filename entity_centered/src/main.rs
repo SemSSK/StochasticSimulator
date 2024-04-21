@@ -133,7 +133,11 @@ impl From<Ast> for Environment {
 
         let board = ValueBoard {
             rows: vec![],
-            columns: id_element_table.table.keys().cloned().collect_vec(),
+            columns: {
+                let mut cols = id_element_table.table.keys().cloned().collect_vec();
+                cols.push("time".to_string());
+                cols
+            },
         };
         Self {
             board,

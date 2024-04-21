@@ -25,7 +25,5 @@ move :: Molecule -> MovedMolecule
 detectCollision :: [MovedMolecule] -> [CollidedMolecules]
 
 finalizeStep :: ReactionRegister -> [CollisionDecisionMolecules] -> [Molecule]
-finalizeStep reg cols = flatMap (regs.apply) cols
 
 simulation :: [Molecule] -> [Molecule]
-simulation molecules = finalizeStep reactionRegister · detectCollision $ map move molecules

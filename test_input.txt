@@ -1,5 +1,5 @@
-E1 : s -> i | 200mM - 100mM;
-E2 : i -> p | 200mM - 80mM;
+E1 : s -> i | 200uN - 100;
+E2 : i -> p | 200uN - 80;
 init(E1) = 30;
 init(E2) = 50;
 init(s) = 2000;

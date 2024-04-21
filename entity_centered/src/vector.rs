@@ -3,31 +3,15 @@ use std::{
     ops::{Add, Mul, Neg, Sub},
 };
 
+use glam::{IVec3, Vec3A};
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vector3d {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub data: Vec3A,
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Copy)]
 pub struct VectorInt3d {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
-impl Hash for Vector3d {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let (x, y, z) = (
-            (self.x / 10.).floor() as i32,
-            (self.y / 10.).floor() as i32,
-            (self.z / 10.).floor() as i32,
-        );
-        x.hash(state);
-        y.hash(state);
-        z.hash(state);
-    }
+    pub data: IVec3,
 }
 
 impl Add for Vector3d {
@@ -35,9 +19,7 @@ impl Add for Vector3d {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
+            data: self.data + rhs.data,
         }
     }
 }
@@ -47,9 +29,7 @@ impl Mul<Vector3d> for f32 {
 
     fn mul(self, rhs: Vector3d) -> Self::Output {
         Self::Output {
-            x: rhs.x * self,
-            y: rhs.y * self,
-            z: rhs.z * self,
+            data: self * rhs.data,
         }
     }
 }
@@ -58,9 +38,7 @@ impl Mul<f32> for Vector3d {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self::Output {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
+            data: rhs * self.data,
         }
     }
 }
@@ -83,45 +61,39 @@ impl Sub for Vector3d {
 
 impl Vector3d {
     pub fn get_random_unitary() -> Self {
-        let x = fastrand::f32() - 0.5;
-        let y = fastrand::f32() - 0.5;
-        let z = fastrand::f32() - 0.5;
-        let vec = Self { x, y, z };
-        let length = vec.dot(&vec).sqrt();
-        1. / length * Self { x, y, z }
+        let mut data = Vec3A::new(
+            fastrand::f32() - 0.5,
+            fastrand::f32() - 0.5,
+            fastrand::f32() - 0.5,
+        ) * 100.;
+        data = data.normalize();
+        Self { data }
     }
 
     pub fn dot(&self, other: &Self) -> f32 {
-        self.x * other.x + self.y * other.y + self.z * other.z
+        self.data.dot(other.data)
     }
 
     pub fn distance(&self, other: &Self) -> f32 {
-        self.distance_pow2(other).sqrt()
+        self.data.distance(other.data)
     }
 
     pub fn distance_pow2(&self, other: &Self) -> f32 {
         let vec = *self - *other;
-        vec.dot(&vec)
+        vec.data.distance_squared(vec.data)
     }
 
     pub fn into_vectorint(self) -> VectorInt3d {
-        VectorInt3d {
-            x: self.x.floor() as i32,
-            y: self.y.floor() as i32,
-            z: self.z.floor() as i32,
-        }
+        let data = (self.data / 10.).as_ivec3();
+        VectorInt3d { data }
     }
 }
 
-pub const VECTOR_ZERO: Vector3d = Vector3d {
-    x: 0.,
-    y: 0.,
-    z: 0.,
-};
+pub const VECTOR_ZERO: Vector3d = Vector3d { data: Vec3A::ZERO };
 
 pub fn generate_random_position() -> Vector3d {
     let vec = Vector3d::get_random_unitary();
-    let d = fastrand::f32() * 900.0 - 450.0;
+    let d = fastrand::f32() * 400.0;
     let random_pos = d * vec;
     assert!(random_pos.distance(&VECTOR_ZERO) <= 500.);
     random_pos

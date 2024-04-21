@@ -20,3 +20,7 @@ smallvec = "1.13.2"
 mimalloc = "0.1.39"
 indicatif = "0.17.8"
 typed-arena = "2.0.2"
+rstar = "0.12.0"
+hashbrown = { version = "0.14.3", features = ["rayon"] }
+glam = { version = "0.27.0", features = ["fast-math", "rand", "core-simd"] }
+rand = "0.8.5"

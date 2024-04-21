@@ -124,13 +124,12 @@ impl Parsable for Reaction {
             content: km,
             next_input,
         } = parse_float().parse(next_input)?;
-        let ParserSuccess { next_input, .. } = parse_mM().parse(next_input)?;
+        let ParserSuccess { next_input, .. } = parse_uN().parse(next_input)?;
         let ParserSuccess { next_input, .. } = parse_dash().parse(next_input)?;
         let ParserSuccess {
             content: kcat,
             next_input,
         } = parse_float().parse(next_input)?;
-        let ParserSuccess { next_input, .. } = parse_mM().parse(next_input)?;
         let ParserSuccess { next_input, .. } = parse_semicolon().parse(next_input)?;
         Ok(ParserSuccess {
             next_input,

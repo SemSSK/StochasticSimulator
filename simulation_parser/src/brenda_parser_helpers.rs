@@ -11,8 +11,8 @@ pub fn parse_eof<'a>() -> impl Parser<'a, ()> {
 
 // Separators
 
-pub fn parse_mM<'a>() -> impl Parser<'a, &'static str> {
-    between_spaces(literal("mM"))
+pub fn parse_uN<'a>() -> impl Parser<'a, &'static str> {
+    between_spaces(literal("uN"))
 }
 pub fn parse_lparen<'a>() -> impl Parser<'a, &'static str> {
     between_spaces(literal("("))
