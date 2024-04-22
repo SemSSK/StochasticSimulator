@@ -30,6 +30,7 @@
       {
         devShell = with pkgs; mkShell {
           buildInputs = [
+            zip
             pkg-config
             rust-bin.nightly.latest.default
             rust-analyzer
